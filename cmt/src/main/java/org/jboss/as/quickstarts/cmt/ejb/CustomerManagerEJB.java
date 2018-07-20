@@ -19,11 +19,11 @@ package org.jboss.as.quickstarts.cmt.ejb;
 import java.rmi.RemoteException;
 import java.util.List;
 
+import javax.annotation.Resource;
 import javax.ejb.Stateless;
 import javax.ejb.TransactionAttribute;
 import javax.ejb.TransactionAttributeType;
 import javax.inject.Inject;
-import javax.jms.JMSException;
 import javax.naming.NamingException;
 import javax.persistence.EntityManager;
 import javax.persistence.PersistenceContext;
@@ -32,6 +32,7 @@ import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
 import javax.transaction.RollbackException;
 import javax.transaction.SystemException;
+import javax.transaction.TransactionSynchronizationRegistry;
 
 import org.jboss.as.quickstarts.cmt.model.Customer;
 
@@ -42,16 +43,25 @@ public class CustomerManagerEJB {
     private EntityManager entityManager;
 
     @Inject
-    private InvoiceManagerEJB invoiceManager;
+    private CustomerManagerEJB self;
 
     @TransactionAttribute(TransactionAttributeType.REQUIRED)
     public void createCustomer(String name) throws RemoteException {
 
         Customer c1 = new Customer();
-        c1.setName(name);
+        c1.setName("SHOULD NOT GET PERSISTED!!");
         entityManager.persist(c1);
 
-        invoiceManager.createInvoice(name);
+        self.createCustomerForReal(name);
+
+        throw new RuntimeException("OOPS!!");
+    }
+
+    @TransactionAttribute(TransactionAttributeType.REQUIRES_NEW)
+    public void createCustomerForReal(String name) throws RemoteException {
+        Customer c1 = new Customer();
+        c1.setName(name);
+        entityManager.persist(c1);
     }
 
     /**
